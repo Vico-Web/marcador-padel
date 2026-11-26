@@ -29,12 +29,11 @@ function bandera(p){
 }
 function avatar(j,cls){
   const ini=esc(((j.nombre||'')[0]||'')+((j.apellido||'')[0]||'')).toUpperCase();
-  return `<svg class="pw-avatar ${cls}" viewBox="0 0 240 280" preserveAspectRatio="xMidYMax meet"><defs><linearGradient id="g${cls}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4452"/><stop offset="1" stop-color="#232a33"/></linearGradient></defs><circle cx="120" cy="92" r="58" fill="url(#g${cls})"/><path d="M14 280c0-76 46-118 106-118s106 42 106 118z" fill="url(#g${cls})"/><text x="120" y="108" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="46" fill="#7f8a99">${ini}</text></svg>`;
+  return `<svg class="pw-avatar ${cls}" viewBox="0 0 240 280" preserveAspectRatio="xMidYMax meet"><circle cx="120" cy="92" r="58" fill="#333b46"/><path d="M14 280c0-76 46-118 106-118s106 42 106 118z" fill="#333b46"/><text x="120" y="108" text-anchor="middle" font-family="Barlow Condensed,sans-serif" font-weight="800" font-size="46" fill="#7f8a99">${ini}</text></svg>`;
 }
 const foto=(j,cls='')=>j.foto?`<img class="pw-photo ${cls}" alt="" src="${esc(j.foto)}">`:avatar(j,cls);
 const efectividad=j=>(+j.partidosJugados>0&&has(j.partidosGanados))?(100*j.partidosGanados/j.partidosJugados).toFixed(1).replace('.',',')+'%':'';
 function stat(l,v,txt,wide){return has(v)?`<div class="pw-stat${wide?' wide':''}"><div class="pw-lab">${l}</div><div class="pw-val${txt?' txt':''}">${esc(v)}</div></div>`:'';}
-function nombreJ(j){return `<div class="pw-first">${esc(j.nombre)}</div><div class="pw-last pw-cond">${esc(j.apellido)}</div>`;}
 
 function hexRgb(h){const m=String(h||'').trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);if(!m)return null;let x=m[1];if(x.length===3)x=x.replace(/./g,c=>c+c);const n=parseInt(x,16);return [n>>16,(n>>8)&255,n&255];}
 const rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
@@ -43,8 +42,11 @@ function tintaSobre(c){const L=c.map(v=>{v/=255;return v<=.03928?v/12.92:((v+.05
 function aplicarTema(root,est){
   const t=est.tema||{},acc=hexRgb(t.acento)||hexRgb(est.widgets.acento)||[200,240,49],fon=hexRgb(t.fondo)||[13,16,20],tx=hexRgb(t.texto)||[255,255,255],se=hexRgb(t.secundario)||[154,164,178];
   const set=(k,v)=>root.style.setProperty(k,v);
-  set('--acc',rgba(acc,1));set('--acc-ink',tintaSobre(acc));set('--acc-glow',rgba(acc,.38));
-  set('--glass',rgba(fon,.94));set('--fondo',rgba(fon,1));set('--fondo2',rgba(mezcla(fon,[255,255,255],.09),1));set('--texto',rgba(tx,1));set('--mute',rgba(se,1));
+  set('--acc',rgba(acc,1));set('--acc-ink',tintaSobre(acc));
+  set('--fondo',rgba(fon,1));set('--fondo2',rgba(mezcla(fon,[255,255,255],.09),1));set('--borde',rgba(mezcla(fon,[255,255,255],.16),1));
+  const fd=est.widgets.fondo||{},tipo=['liso','franja','imagen'].includes(fd.tipo)?fd.tipo:'franja';
+  root.classList.remove('f-liso','f-franja','f-imagen');root.classList.add('f-'+(tipo==='imagen'&&!fd.imagen?'liso':tipo));
+  set('--bg-img',fd.imagen?`url("${String(fd.imagen).replace(/["\\\n]/g,'')}")`:'none');set('--texto',rgba(tx,1));set('--mute',rgba(se,1));
 }
 const ordenSeq=est=>[0,1,2,3].filter(i=>has(est.jugadores[i].apellido)||has(est.jugadores[i].nombre));
 
@@ -58,7 +60,7 @@ function montar(root){
     const comp=est.jugadores[i^1];
     const bio=[stat('Ranking',j.ranking),stat('Edad',j.edad),stat('Posición',j.posicion,1),stat('Juega',j.mano,1),stat('Puntos ranking',has(j.puntos)?Number(j.puntos).toLocaleString('es-ES'):'',0,1)].join('');
     const sts=[stat('Mejor ranking',j.mejorRanking),stat('Títulos',j.titulos),stat('Partidos jugados',j.partidosJugados),stat('Partidos ganados',j.partidosGanados),stat('Efectividad',efectividad(j),0,1)].join('');
-    ficha.innerHTML=`<div class="pw-card"><div class="pw-head"><div class="pw-slash"></div>${foto(j)}<div class="pw-name"><div class="pw-country">${bandera(j.pais)}${esc(String(j.pais||'').toUpperCase())}</div>${nombreJ(j)}</div></div>
+    ficha.innerHTML=`<div class="pw-card"><div class="pw-head"><div class="pw-bg"></div>${foto(j)}</div><div class="pw-nameband"><div class="pw-country">${bandera(j.pais)}${esc(String(j.pais||'').toUpperCase())}</div><div class="pw-fullname">${esc(j.nombre)} <b>${esc(j.apellido)}</b></div></div>
       <div class="pw-bar"><span class="t">Ficha del jugador</span><small></small></div>
       <div class="pw-body"><div class="pw-grid g0">${bio}</div><div class="pw-grid g1 alt">${sts}</div></div>
       <div class="pw-foot"><span>${has(comp.apellido)?'Pareja de '+esc(comp.apellido):''}</span><span>${esc(p.torneo)}</span></div></div>`;
@@ -72,7 +74,7 @@ function montar(root){
   const pagFija=()=>{const v=est.widgets.ficha.vista;return v==='stats'?1:v==='bio'?0:null;};
   function pintarVS(){
     const J=est.jugadores,p=est.partido;
-    const lado=(k,a,b)=>`<div class="pw-side ${k}"><div class="pw-glow"></div><div class="pw-pics">${foto(J[a],'p0')}${foto(J[b],'p1')}</div>
+    const lado=(k,a,b)=>`<div class="pw-side ${k}"><div class="pw-pics"><div class="pw-bg"></div>${foto(J[a],'p0')}${foto(J[b],'p1')}</div>
       <div class="pw-names">${[J[a],J[b]].map(j=>`<div class="pw-pl"><div class="pw-first">${k==='a'?bandera(j.pais):''}${esc(j.nombre)}${k==='b'?bandera(j.pais):''}</div><div class="pw-last pw-cond">${esc(j.apellido)}</div></div>`).join('')}</div></div>`;
     vs.innerHTML=lado('a',0,1)+`<div class="pw-mid"><div><div class="pw-cat">${esc(p.categoria)}</div><div class="pw-round">${esc(p.ronda)}</div>${(p.categoria||p.ronda)?'<div class="pw-rule"></div>':''}</div>
       <div class="pw-big">V<span>S</span></div><div class="pw-tour">${p.logo?`<img alt="" src="${esc(p.logo)}">`:''}<div>${esc(p.torneo)}</div><small>${esc(p.sede||'')}</small></div></div>`+lado('b',2,3);

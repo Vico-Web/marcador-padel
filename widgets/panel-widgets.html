@@ -99,6 +99,12 @@ input[type=color]{padding:2px;height:44px}
     <div class="photo"><span id="logoPrev"></span><label class="btn file">Logo del torneo<input type="file" accept="image/*" id="logoFile"></label><button id="logoQuitar">Quitar logo</button></div>
   </div></div>
 
+  <div class="sec">Fondo de la ficha y del VS</div>
+  <div class="box">
+    <div class="seg" id="fondoTipo"><button data-f="liso">Liso</button><button data-f="franja">Con franja</button><button data-f="imagen">Imagen propia</button></div>
+    <div class="photo" style="margin-top:12px"><span id="fondoPrev"></span><label class="btn file">Subir imagen de fondo<input type="file" accept="image/*" id="fondoFile"></label><button id="fondoQuitar">Quitar imagen</button></div>
+    <p class="status" style="margin:10px 0 0">Liso usa el color de fondo del marcador y la franja, el color de acento. La imagen se recorta para llenar la zona de las fotos.</p>
+  </div>
   <div class="sec">Jugadores del partido</div>
   <div id="jug"></div>
   <div class="sec">Fichas guardadas</div>
@@ -133,6 +139,8 @@ function rellenar(){
     const d=document.querySelector(`details[data-i="${i}"]`);d.querySelector('.nm').textContent=[j.nombre,j.apellido].filter(Boolean).join(' ')||`Jugador ${i+1}`;
     d.querySelector('.fp').innerHTML=j.foto?`<img alt="" src="${esc(j.foto)}">`:'<span class="ph">Sin foto</span>';});
   ['categoria','ronda','torneo','sede'].forEach(k=>{const el=document.getElementById('p_'+k);if(document.activeElement!==el)el.value=est.partido[k]??'';});
+  const fd=est.widgets.fondo||{};
+  document.getElementById('fondoPrev').innerHTML=fd.imagen?`<img alt="" src="${esc(fd.imagen)}">`:'';
   document.getElementById('logoPrev').innerHTML=est.partido.logo?`<img alt="" src="${esc(est.partido.logo)}">`:'';
   botones();
 }
@@ -145,6 +153,7 @@ function botones(){
   document.querySelectorAll('#segs button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.s===(+sq.segundos||10)));
   document.getElementById('fichaQuien').textContent=J[w.ficha.jugador]?.apellido||'';
   document.getElementById('chips').innerHTML=J.map((j,i)=>`<button data-j="${i}" aria-pressed="${+w.ficha.jugador===i}">${esc(j.apellido||'Jugador '+(i+1))}</button>`).join('');
+  document.querySelectorAll('#fondoTipo button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===((w.fondo||{}).tipo||'franja')));
   document.querySelectorAll('#vista button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===w.ficha.vista));
 }
 function enviar(claves){
@@ -187,16 +196,20 @@ document.addEventListener('input',e=>{
     document.querySelector(`details[data-i="${m[1]}"] .nm`).textContent=[est.jugadores[+m[1]].nombre,est.jugadores[+m[1]].apellido].filter(Boolean).join(' ');enviar(['jugadores']);}
   else{est.partido[p[1]]=e.target.value;enviar(['partido']);}
 });
-function leerImagen(file,maxH,cb){
+function leerImagen(file,maxH,cb,jpeg){
   const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{
     const k=Math.min(1,maxH/img.height),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    cb(/png|webp|gif/.test(file.type)?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.85));};img.src=fr.result;};fr.readAsDataURL(file);
+    cb(!jpeg&&/png|webp|gif/.test(file.type)?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.85));};img.src=fr.result;};fr.readAsDataURL(file);
 }
 document.getElementById('jug').addEventListener('change',e=>{const i=e.target.dataset.foto;if(i===undefined||!e.target.files[0])return;
   leerImagen(e.target.files[0],560,url=>{est.jugadores[+i].foto=url;enviar(['jugadores']);rellenar();});e.target.value='';});
 document.getElementById('jug').addEventListener('click',e=>{const i=e.target.dataset.quitar;if(i===undefined)return;e.preventDefault();est.jugadores[+i].foto='';enviar(['jugadores']);rellenar();});
 document.getElementById('logoFile').onchange=e=>{if(!e.target.files[0])return;leerImagen(e.target.files[0],160,url=>{est.partido.logo=url;enviar(['partido']);rellenar();});e.target.value='';};
+const FD=()=>(W().fondo=W().fondo||{tipo:'franja',imagen:''});
+document.getElementById('fondoTipo').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;FD().tipo=b.dataset.f;enviar(['widgets']);if(b.dataset.f==='imagen'&&!FD().imagen)document.getElementById('fondoFile').click();};
+document.getElementById('fondoFile').onchange=e=>{if(!e.target.files[0])return;leerImagen(e.target.files[0],700,url=>{FD().imagen=url;FD().tipo='imagen';enviar(['widgets']);rellenar();},true);e.target.value='';};
+document.getElementById('fondoQuitar').onclick=()=>{FD().imagen='';if(FD().tipo==='imagen')FD().tipo='franja';enviar(['widgets']);rellenar();};
 document.getElementById('logoQuitar').onclick=()=>{est.partido.logo='';enviar(['partido']);rellenar();};
 let armado=false;
 document.getElementById('reset').onclick=()=>{const ok=document.getElementById('resetOk');
