@@ -12,7 +12,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, 'public');
 const WIDGETS = path.join(__dirname, '..', 'widgets');
 // Carpeta donde se guardan estado.json y biblioteca.json. En Railway se usa el disco (volumen) automáticamente.
-const DATOS = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+const DATOS = process.env.RAILWAY_VOLUME_MOUNT_PATH || process.env.DATA_DIR || __dirname;
 try { fs.mkdirSync(DATOS, { recursive: true }); } catch (_) {}
 let ultimoGuardado = null, errorGuardado = null;
 const ARCHIVO_ESTADO = path.join(DATOS, 'estado.json');
@@ -105,7 +105,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (p === '/api/state' && req.method === 'GET') return json(res, 200, doc);
-  if (p === '/api/info' && req.method === 'GET') return json(res, 200, { clave: !!CLAVE, datos: DATOS, volumen: !!process.env.RAILWAY_VOLUME_MOUNT_PATH, ultimoGuardado, errorGuardado });
+  if (p === '/api/info' && req.method === 'GET') return json(res, 200, { clave: !!CLAVE, datos: DATOS, volumen: process.env.RAILWAY_VOLUME_MOUNT_PATH || null, dataDir: process.env.DATA_DIR || null, ultimoGuardado, errorGuardado });
 
   if (req.method === 'POST' && p.startsWith('/api/') && !claveOk(req)) return json(res, 401, { error: 'clave' });
   if (p === '/api/login') return json(res, 200, { ok: true });
