@@ -53,8 +53,9 @@
   font-size: 27px; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap;
 }
 .mk-nombres .sep { color: var(--mk-tenue); font-weight: 500; }
-.mk-fila.saca .mk-nombres .j { color: var(--mk-tenue); transition: color .25s; }
-.mk-fila.saca .mk-nombres .j.saca { color: var(--mk-texto); }
+.mk-nombres .j { transition: color .25s; }
+/* el jugador que saca se marca en gris; su compañero queda en blanco */
+.mk-fila.saca .mk-nombres .j.saca { color: var(--mk-tenue); }
 
 .mk-sets { display: flex; }
 .mk-set {
