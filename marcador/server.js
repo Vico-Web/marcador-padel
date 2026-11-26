@@ -11,7 +11,10 @@ const E = require('./public/engine.js');
 const PORT = Number(process.env.PORT) || 3000;
 const PUBLIC = path.join(__dirname, 'public');
 const WIDGETS = path.join(__dirname, '..', 'widgets');
-const DATOS = process.env.DATA_DIR || __dirname;      // carpeta donde se guardan estado.json y biblioteca.json
+// Carpeta donde se guardan estado.json y biblioteca.json. En Railway se usa el disco (volumen) automáticamente.
+const DATOS = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+try { fs.mkdirSync(DATOS, { recursive: true }); } catch (_) {}
+let ultimoGuardado = null, errorGuardado = null;
 const ARCHIVO_ESTADO = path.join(DATOS, 'estado.json');
 const CLAVE = process.env.CLAVE_PANEL || '';            // si está definida, el panel pide contraseña
 const crypto = require('crypto');
@@ -44,7 +47,10 @@ function emitir() {
   for (const res of clientes) res.write(datos);
   clearTimeout(guardarPendiente);
   guardarPendiente = setTimeout(() => {
-    fs.writeFile(ARCHIVO_ESTADO, JSON.stringify({ doc, historial }), () => {});
+    fs.writeFile(ARCHIVO_ESTADO, JSON.stringify({ doc, historial }), err => {
+      if (err) { errorGuardado = err.message; console.error('No se pudo guardar el estado:', err.message); }
+      else { ultimoGuardado = new Date().toISOString(); errorGuardado = null; }
+    });
   }, 300);
 }
 
@@ -99,7 +105,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (p === '/api/state' && req.method === 'GET') return json(res, 200, doc);
-  if (p === '/api/info' && req.method === 'GET') return json(res, 200, { clave: !!CLAVE });
+  if (p === '/api/info' && req.method === 'GET') return json(res, 200, { clave: !!CLAVE, datos: DATOS, volumen: !!process.env.RAILWAY_VOLUME_MOUNT_PATH, ultimoGuardado, errorGuardado });
 
   if (req.method === 'POST' && p.startsWith('/api/') && !claveOk(req)) return json(res, 401, { error: 'clave' });
   if (p === '/api/login') return json(res, 200, { ok: true });
@@ -141,6 +147,7 @@ server.listen(PORT, '0.0.0.0', () => {
   for (const lista of Object.values(os.networkInterfaces()))
     for (const i of lista || []) if (i.family === 'IPv4' && !i.internal) ips.push(i.address);
   console.log('\n  Marcador de pádel en marcha\n');
+  console.log('  Datos guardados en: ' + DATOS);
   console.log('  OBS (fuente de navegador 1920x1080):  http://localhost:' + PORT + '/overlay');
   console.log('  Panel en este ordenador:              http://localhost:' + PORT + '/control');
   for (const ip of ips) console.log('  Panel desde el móvil (misma wifi):    http://' + ip + ':' + PORT + '/control');
