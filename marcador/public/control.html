@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Panel del marcador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scoreboard.css">
+<style>
+/* VOICE everyday tool, used courtside under pressure
+   IDEA the referee's scoring remote: two huge buttons, nothing to miss
+   PICTURE the live broadcast scoreboard on a court-blue tile, exactly as OBS shows it
+   COLOUR graphite ground, lime ball accent, court blue for the preview tile (one fixed night palette)
+   TYPE Barlow Condensed 700 + Barlow
+   LAYOUT phone: preview, two point buttons, action row, settings below; laptop: preview+buttons left, settings right */
+:root{color-scheme:dark;--bg:#0e1218;--panel:#171d26;--panel2:#202835;--line:#2c3644;--ink:#eef2f7;--dim:#8a96a8;--lime:#c8f135;--limeInk:#0e1218;--court:#1f5fc4;--red:#ff5c5c}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.45 Barlow,system-ui,sans-serif;overflow-x:clip;padding-left:max(4vw,16px,env(safe-area-inset-left,0px));padding-right:max(4vw,16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+h1{font:700 30px/1.05 'Barlow Condensed',sans-serif;letter-spacing:-.01em;margin:0}
+h2{font:700 20px/1.1 'Barlow Condensed',sans-serif;margin:0 0 10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.chip{font-size:13px;padding:4px 10px;border-radius:99px;background:var(--panel2);color:var(--dim);white-space:nowrap}
+.chip.ok{color:var(--lime)}
+.chip.ko{color:var(--red)}
+.wrap{display:grid;gap:18px;max-width:1240px;margin:0 auto}
+@media(min-width:960px){.wrap{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start}.col-a{position:sticky;top:14px}}
+.preview{background:linear-gradient(160deg,#1a4fa6,var(--court));border-radius:14px;padding:16px;min-height:150px;position:relative;overflow:hidden}
+.preview::after{content:"";position:absolute;inset:auto -10% -40% -10%;height:70%;border-top:3px solid rgba(255,255,255,.35);border-radius:50% 50% 0 0/20% 20% 0 0;pointer-events:none}
+#escala{transform-origin:top left;position:relative;z-index:1;width:max-content}
+.botones{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:14px}
+.punto{appearance:none;border:0;border-radius:16px;min-height:150px;padding:14px 10px;cursor:pointer;font:700 22px/1.05 'Barlow Condensed',sans-serif;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;touch-action:manipulation;transition:transform .08s}
+.punto:active{transform:scale(.97)}
+.punto b{font-size:44px;line-height:1}
+.punto span{overflow-wrap:anywhere;text-align:center}
+.punto.a{background:var(--lime);color:var(--limeInk)}
+.punto.b{background:#e9eef5;color:var(--limeInk)}
+.punto:disabled{opacity:.4}
+.acciones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:12px;min-height:48px;padding:8px 10px;font:600 15px/1.2 Barlow,sans-serif;cursor:pointer;touch-action:manipulation}
+.btn:hover{border-color:var(--dim)}
+.btn:active{background:var(--line)}
+.btn.on{border-color:var(--lime);color:var(--lime)}
+.btn.peligro{color:var(--red)}
+.btn.peligro.armado{background:var(--red);color:#fff;border-color:var(--red)}
+.btn.prim{background:var(--lime);color:var(--limeInk);border-color:var(--lime)}
+.fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.fila .btn{flex:1 1 140px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.col-b{display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+label{display:block;font-size:13px;color:var(--dim);margin-bottom:4px}
+input,select{width:100%;font:16px Barlow,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:44px}
+input:focus,select:focus,.btn:focus-visible,.punto:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.check{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--ink);margin:10px 0 0}
+.check input{width:22px;min-height:22px;accent-color:var(--lime)}
+.pareja{font:700 15px 'Barlow Condensed',sans-serif;letter-spacing:.04em;color:var(--lime);margin:12px 0 6px}
+.pareja:first-of-type{margin-top:0}
+.nota{font-size:13px;color:var(--dim);margin:10px 0 0}
+.nota code{color:var(--ink);overflow-wrap:anywhere}
+.saque-info{font-size:14px;color:var(--dim);margin-top:10px;text-align:center}
+.saque-info b{color:var(--ink)}
+.login{position:fixed;inset:0;z-index:10;background:rgba(8,10,14,.92);display:flex;align-items:center;justify-content:center;padding:20px}
+.login form{width:min(360px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;display:grid;gap:12px}
+.login[hidden]{display:none}
+.login .error{color:var(--red);font-size:14px;min-height:1em;margin:0}
+.paletas{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.paleta{appearance:none;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;cursor:pointer;display:grid;gap:6px;color:var(--dim);font:600 12px Barlow,sans-serif}
+.paleta:hover{border-color:var(--dim)}
+.paleta i{display:flex;height:18px;border-radius:5px;overflow:hidden}
+.paleta i b{flex:1}
+.colores{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.color{display:flex;gap:8px;align-items:center}
+.color input[type=color]{width:44px;min-width:44px;height:44px;padding:2px;border-radius:10px;cursor:pointer}
+.color input.mal{border-color:var(--red)}
+</style>
+</head>
+<body>
+<div class="login" id="login" hidden>
+  <form id="formLogin">
+    <h2>Contraseña del panel</h2>
+    <div><label for="clave">Contraseña</label><input id="clave" type="password" autocomplete="current-password"></div>
+    <p class="error" id="errorLogin"></p>
+    <button class="btn prim" type="submit">Entrar</button>
+  </form>
+</div>
+<div class="wrap">
+  <div class="col-a">
+    <div class="top">
+      <h1>Marcador en directo</h1>
+      <span class="chip" id="estadoConexion">Conectando…</span>
+    </div>
+    <div class="preview" id="preview"><div id="escala"></div></div>
+    <div class="botones">
+      <button class="punto a" id="puntoA"><b>+1</b><span id="nombreA">Pareja A</span></button>
+      <button class="punto b" id="puntoB"><b>+1</b><span id="nombreB">Pareja B</span></button>
+    </div>
+    <div class="acciones">
+      <button class="btn" id="deshacer">↶ Deshacer</button>
+      <button class="btn" id="cambiarEquipo">Saca la otra pareja</button>
+      <button class="btn" id="cambiarSacador">Cambiar sacador</button>
+    </div>
+    <div class="saque-info" id="saqueInfo"></div>
+  </div>
+
+  <div class="col-b">
+    <section class="panel">
+      <h2>Emisión</h2>
+      <div class="fila">
+        <button class="btn on" id="verMarcador">Marcador visible</button>
+      </div>
+      <div class="fila">
+        <button class="btn" data-ficha="0">Ficha J1</button>
+        <button class="btn" data-ficha="1">Ficha J2</button>
+        <button class="btn" data-ficha="2">Ficha J3</button>
+        <button class="btn" data-ficha="3">Ficha J4</button>
+        <button class="btn" id="verVs">Pantalla VS</button>
+      </div>
+      <p class="nota">Las fichas y la pantalla VS se ven en la página de gráficos (<code>/widgets/widgets.html</code>), que se añade como otra fuente en OBS.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Jugadores y torneo</h2>
+      <form id="formJugadores">
+        <div class="pareja">PAREJA A</div>
+        <div class="grid2">
+          <div><label for="j0n">Nombre J1</label><input id="j0n" autocomplete="off"></div>
+          <div><label for="j0a">Apellido J1</label><input id="j0a" autocomplete="off"></div>
+          <div><label for="j1n">Nombre J2</label><input id="j1n" autocomplete="off"></div>
+          <div><label for="j1a">Apellido J2</label><input id="j1a" autocomplete="off"></div>
+        </div>
+        <div class="pareja">PAREJA B</div>
+        <div class="grid2">
+          <div><label for="j2n">Nombre J3</label><input id="j2n" autocomplete="off"></div>
+          <div><label for="j2a">Apellido J3</label><input id="j2a" autocomplete="off"></div>
+          <div><label for="j3n">Nombre J4</label><input id="j3n" autocomplete="off"></div>
+          <div><label for="j3a">Apellido J4</label><input id="j3a" autocomplete="off"></div>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div><label for="torneo">Torneo</label><input id="torneo" autocomplete="off"></div>
+          <div><label for="ronda">Ronda</label><input id="ronda" autocomplete="off" placeholder="Cuartos de final"></div>
+        </div>
+        <div class="fila"><button class="btn prim" type="submit">Guardar nombres</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Formato</h2>
+      <div class="grid2">
+        <div><label for="fSets">Partido</label>
+          <select id="fSets"><option value="1">A 1 set</option><option value="3">Al mejor de 3 sets</option><option value="5">Al mejor de 5 sets</option></select></div>
+        <div><label for="fIguales">En 40-40</label>
+          <select id="fIguales"><option value="starpoint">Star point</option><option value="oro">Punto de oro</option><option value="ventaja">Ventaja</option></select></div>
+        <div><label for="fStar">Star point en el</label>
+          <select id="fStar"><option value="2">2.º 40-40</option><option value="3">3.er 40-40</option><option value="4">4.º 40-40</option></select></div>
+        <div><label for="fJuegos">Juegos por set</label>
+          <select id="fJuegos"><option value="4">4</option><option value="6">6</option></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="fSuper"> Set decisivo a super tie-break (10 puntos)</label>
+      <div class="fila">
+        <button class="btn" id="aplicarFormato">Aplicar sin borrar</button>
+        <button class="btn peligro" id="nuevoPartido">Nuevo partido</button>
+      </div>
+      <p class="nota">Atajos con teclado: <code>A</code> punto pareja A, <code>L</code> punto pareja B, <code>Z</code> deshacer.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Colores</h2>
+      <div class="paletas" id="paletas"></div>
+      <div class="colores">
+        <div><label for="cAcentoT">Acento</label><div class="color"><input type="color" id="cAcento" aria-label="Acento"><input id="cAcentoT" spellcheck="false"></div></div>
+        <div><label for="cFondoT">Fondo</label><div class="color"><input type="color" id="cFondo" aria-label="Fondo"><input id="cFondoT" spellcheck="false"></div></div>
+        <div><label for="cTextoT">Texto</label><div class="color"><input type="color" id="cTexto" aria-label="Texto"><input id="cTextoT" spellcheck="false"></div></div>
+        <div><label for="cSecundarioT">Secundario</label><div class="color"><input type="color" id="cSecundario" aria-label="Secundario"><input id="cSecundarioT" spellcheck="false"></div></div>
+      </div>
+      <p class="nota">Admite <code>#c8f135</code>, <code>rgb(200,241,53)</code>, <code>200,241,53</code> o nombres como <code>gold</code>. Se aplica al marcador y a las fichas al momento.</p>
+    </section>
+
+    <section class="panel" id="panelObs">
+      <h2>OBS</h2>
+      <p class="nota" id="notaObs"></p>
+    </section>
+  </div>
+</div>
+
+<script src="engine.js"></script>
+<script src="scoreboard.js"></script>
+<script>
+{
+  const E = window.PadelEngine;
+  const $ = id => document.getElementById(id);
+  const ui = Scoreboard.crear($('escala'));
+  let doc = E.documentoInicial();
+  let modo = null;          // 'servidor' | 'demo'
+  let historialDemo = [];
+  const canal = 'BroadcastChannel' in window ? new BroadcastChannel('marcador-padel') : null;
+
+  /* ---------- transporte ---------- */
+  async function enviar(ruta, cuerpo) {
+    if (modo === 'servidor') {
+      try {
+        const r = await fetch(ruta, { method: 'POST', headers: cabeceras(), body: JSON.stringify(cuerpo || {}) });
+        if (r.status === 401) { pedirClave('La contraseña no es correcta o ha cambiado.'); return; }
+        if (!r.ok) throw new Error((await r.json()).error || r.status);
+      } catch (e) { conexion('ko', 'Sin conexión'); }
+      return;
+    }
+    // modo demo: misma lógica que el servidor, en el navegador
+    if (ruta === '/api/action') { historialDemo.push(doc.marcador); doc = E.aplicarAccion(doc, cuerpo); }
+    else if (ruta === '/api/undo') { if (historialDemo.length) doc = Object.assign({}, doc, { marcador: historialDemo.pop() }); }
+    else if (ruta === '/api/patch') { doc = Object.assign({}, doc, cuerpo); }
+    try { localStorage.setItem('marcador-demo', JSON.stringify({ doc, historialDemo: historialDemo.slice(-100) })); } catch (_) {}
+    if (canal) canal.postMessage(doc);
+    pintar();
+  }
+  const accion = a => { try { navigator.vibrate && navigator.vibrate(15); } catch (_) {} enviar('/api/action', a); };
+
+  function leerClave() { try { return localStorage.getItem('marcador-clave') || ''; } catch (_) { return ''; } }
+  function cabeceras() { return { 'Content-Type': 'application/json', 'X-Clave': leerClave() }; }
+  function pedirClave(msg) { $('errorLogin').textContent = msg || ''; $('login').hidden = false; setTimeout(() => $('clave').focus(), 50); }
+  $('formLogin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const clave = $('clave').value;
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Clave': clave }, body: '{}' }).catch(() => null);
+    if (r && r.ok) { try { localStorage.setItem('marcador-clave', clave); } catch (_) {} $('login').hidden = true; }
+    else $('errorLogin').textContent = r ? 'Contraseña incorrecta.' : 'Sin conexión con el servidor.';
+  });
+
+  function conexion(cls, txt) { const c = $('estadoConexion'); c.className = 'chip ' + cls; c.textContent = txt; }
+
+  async function arrancar() {
+    try {
+      const r = await fetch('/api/state', { cache: 'no-store' });
+      const d = await r.json();
+      if (!d || !d.marcador) throw 0;
+      modo = 'servidor'; doc = d;
+      fetch('/api/login', { method: 'POST', headers: cabeceras(), body: '{}' }).then(r => { if (r.status === 401) pedirClave(); }).catch(() => {});
+      const es = new EventSource('/events');
+      es.onopen = () => conexion('ok', 'En directo');
+      es.onerror = () => conexion('ko', 'Reconectando…');
+      es.onmessage = e => { doc = JSON.parse(e.data); pintar(); };
+      const local = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname);
+      const base = local ? location.origin.replace('://' + location.hostname, '://localhost') : location.origin;
+      $('notaObs').innerHTML = 'En OBS añade una fuente <b>Navegador</b> de 1920×1080 con <code>' + base + '/overlay</code> y otra con <code>' + base + '/widgets/widgets.html</code> para fichas y VS. Posición y tamaño del marcador: <code>/overlay?x=48&amp;y=40&amp;escala=1</code>.';
+    } catch (_) {
+      modo = 'demo';
+      try { const g = JSON.parse(localStorage.getItem('marcador-demo')); if (g && g.doc && g.doc.marcador) { doc = g.doc; historialDemo = g.historialDemo || []; } } catch (_) {}
+      if (!localStorageTiene()) doc = ejemplo();
+      conexion('', 'Modo demo');
+      $('notaObs').textContent = 'Esto es una demo sin servidor: el marcador de arriba es el mismo que verá OBS. Para emitir de verdad, arranca server.js en el ordenador de OBS y abre /control desde el móvil.';
+    }
+    rellenarFormularios();
+    pintar();
+  }
+  function localStorageTiene() { try { return !!localStorage.getItem('marcador-demo'); } catch (_) { return false; } }
+
+  /* Partido de ejemplo para la demo (nombres inventados) */
+  function ejemplo() {
+    let d = E.documentoInicial();
+    const n = [['Lucía', 'Navarro'], ['Marta', 'Ibáñez'], ['Elena', 'Soler'], ['Carmen', 'Vidal']];
+    d.jugadores = d.jugadores.map((j, i) => Object.assign({}, j, { nombre: n[i][0], apellido: n[i][1] }));
+    d.partido = Object.assign({}, d.partido, { torneo: 'Open de ejemplo', ronda: 'Semifinal' });
+    const seq = 'aaaabbbbaaaabbbbaaaabbbbaaaabbbbaaaaaaaabbbbbbbbaaaaaaaaa' + 'abbbbaaab';
+    for (const c of seq) d = E.aplicarAccion(d, { type: 'punto', equipo: c === 'a' ? 0 : 1 });
+    return d;
+  }
+
+  /* ---------- pintar ---------- */
+  function ajustarPreview() {
+    const caja = $('preview'), sc = $('escala'), mk = sc.firstChild;
+    if (!mk) return;
+    sc.style.transform = 'none';
+    const w = mk.offsetWidth, h = mk.offsetHeight + 4, disp = caja.clientWidth - 32;
+    const k = Math.min(1, disp / w);
+    sc.style.transform = 'scale(' + k + ')';
+    caja.style.height = (h * k + 32) + 'px';
+  }
+  const ro = new ResizeObserver(ajustarPreview); ro.observe($('preview'));
+
+  function nombrePareja(e) {
+    const j = doc.jugadores || [];
+    return [j[e * 2], j[e * 2 + 1]].map(x => x ? (x.apellido || x.nombre) : '').join(' / ');
+  }
+
+  function pintar() {
+    Scoreboard.pintar(ui, doc);
+    ajustarPreview();
+    $('nombreA').textContent = nombrePareja(0);
+    $('nombreB').textContent = nombrePareja(1);
+    const v = E.vista(doc.marcador);
+    $('puntoA').disabled = $('puntoB').disabled = v.ganador !== null;
+    if (v.sacador) {
+      const j = doc.jugadores[v.sacador.equipo * 2 + v.sacador.jugador] || {};
+      $('saqueInfo').innerHTML = 'Saca: <b></b>';
+      $('saqueInfo').querySelector('b').textContent = [j.nombre, j.apellido].filter(Boolean).join(' ') || 'Jugador ' + (v.sacador.equipo * 2 + v.sacador.jugador + 1);
+    } else $('saqueInfo').textContent = 'Partido terminado. Pulsa Deshacer si ha sido un error.';
+    $('verMarcador').classList.toggle('on', doc.marcadorVisible !== false);
+    $('verMarcador').textContent = doc.marcadorVisible !== false ? 'Marcador visible' : 'Marcador oculto';
+    const w = doc.widgets || {};
+    document.querySelectorAll('[data-ficha]').forEach(b => b.classList.toggle('on', !!(w.ficha && w.ficha.visible && w.ficha.jugador == b.dataset.ficha)));
+    $('verVs').classList.toggle('on', !!(w.vs && w.vs.visible));
+    rellenarColores();
+  }
+
+  function rellenarFormularios() {
+    (doc.jugadores || []).forEach((j, i) => { $('j' + i + 'n').value = j.nombre || ''; $('j' + i + 'a').value = j.apellido || ''; });
+    $('torneo').value = (doc.partido || {}).torneo || '';
+    $('ronda').value = (doc.partido || {}).ronda || '';
+    const c = doc.marcador.config;
+    $('fSets').value = c.sets; $('fIguales').value = c.modoIguales; $('fStar').value = c.starPointEn;
+    $('fJuegos').value = c.juegosSet; $('fSuper').checked = !!c.superTiebreak;
+  }
+
+  function leerFormato() {
+    const juegos = +$('fJuegos').value;
+    return { sets: +$('fSets').value, modoIguales: $('fIguales').value, starPointEn: +$('fStar').value,
+      juegosSet: juegos, tiebreakA: juegos, superTiebreak: $('fSuper').checked };
+  }
+
+  /* ---------- colores ---------- */
+  const PALETAS = [
+    ['Pelota', { acento: '#c8f135', fondo: '#0d1014', texto: '#ffffff', secundario: '#9aa4b2' }],
+    ['Pista azul', { acento: '#3fa9ff', fondo: '#0a1a33', texto: '#ffffff', secundario: '#9db3d1' }],
+    ['Arcilla', { acento: '#ff7a3d', fondo: '#1b1210', texto: '#fff7f2', secundario: '#c3a99c' }],
+    ['Oro', { acento: '#e2b93b', fondo: '#111111', texto: '#ffffff', secundario: '#a0a0a0' }],
+    ['Fucsia', { acento: '#ff2e88', fondo: '#140b1a', texto: '#ffffff', secundario: '#b59bbf' }],
+    ['Claro', { acento: '#0b6cff', fondo: '#ffffff', texto: '#10151c', secundario: '#5b6675' }]
+  ];
+  const CAMPOS_COLOR = ['acento', 'fondo', 'texto', 'secundario'];
+  const may = k => k[0].toUpperCase() + k.slice(1);
+  $('paletas').innerHTML = PALETAS.map((p, i) => '<button class="paleta" data-paleta="' + i + '"><i>' +
+    CAMPOS_COLOR.map(k => '<b style="background:' + p[1][k] + '"></b>').join('') + '</i>' + p[0] + '</button>').join('');
+  document.querySelectorAll('[data-paleta]').forEach(b => b.onclick = () => guardarTema(Object.assign({}, PALETAS[+b.dataset.paleta][1])));
+  function temaActual() { return Object.assign({}, E.TEMA_DEFECTO, doc.tema || {}); }
+  function rellenarColores() {
+    const t = temaActual();
+    CAMPOS_COLOR.forEach(k => {
+      if (document.activeElement !== $('c' + may(k) + 'T')) { $('c' + may(k) + 'T').value = t[k]; $('c' + may(k) + 'T').classList.remove('mal'); }
+      $('c' + may(k)).value = t[k];
+    });
+  }
+  let temporizadorTema = null;
+  function guardarTema(t) {
+    doc = Object.assign({}, doc, { tema: t });
+    pintar();
+    clearTimeout(temporizadorTema);
+    temporizadorTema = setTimeout(() => enviar('/api/patch', { tema: t }), 150);
+  }
+  CAMPOS_COLOR.forEach(k => {
+    $('c' + may(k)).addEventListener('input', e => { const t = temaActual(); t[k] = e.target.value; guardarTema(t); });
+    $('c' + may(k) + 'T').addEventListener('input', e => {
+      const v = Scoreboard.normalizar(e.target.value);
+      e.target.classList.toggle('mal', !v);
+      if (v) { const t = temaActual(); t[k] = v; guardarTema(t); }
+    });
+    $('c' + may(k) + 'T').addEventListener('blur', rellenarColores);
+  });
+
+  /* ---------- eventos ---------- */
+  $('puntoA').onclick = () => accion({ type: 'punto', equipo: 0 });
+  $('puntoB').onclick = () => accion({ type: 'punto', equipo: 1 });
+  $('deshacer').onclick = () => enviar('/api/undo');
+  $('cambiarEquipo').onclick = () => accion({ type: 'cambiarEquipoSaque' });
+  $('cambiarSacador').onclick = () => accion({ type: 'cambiarSacador' });
+  $('verMarcador').onclick = () => accion({ type: 'marcadorVisible', visible: doc.marcadorVisible === false });
+
+  document.querySelectorAll('[data-ficha]').forEach(b => b.onclick = () => {
+    const w = JSON.parse(JSON.stringify(doc.widgets || {}));
+    const n = +b.dataset.ficha, f = w.ficha || { vista: 'bio' };
+    const yaVisible = f.visible && f.jugador === n;
+    w.ficha = Object.assign({}, f, { visible: !yaVisible, jugador: n });
+    if (!yaVisible) w.vs = Object.assign({}, w.vs, { visible: false });
+    enviar('/api/patch', { widgets: w });
+  });
+  $('verVs').onclick = () => {
+    const w = JSON.parse(JSON.stringify(doc.widgets || {}));
+    const vis = !(w.vs && w.vs.visible);
+    w.vs = Object.assign({}, w.vs, { visible: vis });
+    if (vis && w.ficha) w.ficha.visible = false;
+    enviar('/api/patch', { widgets: w });
+  };
+
+  $('formJugadores').addEventListener('submit', e => {
+    e.preventDefault();
+    const jugadores = (doc.jugadores || []).map((j, i) => Object.assign({}, j, { nombre: $('j' + i + 'n').value.trim(), apellido: $('j' + i + 'a').value.trim() }));
+    const partido = Object.assign({}, doc.partido, { torneo: $('torneo').value.trim(), ronda: $('ronda').value.trim() });
+    enviar('/api/patch', { jugadores, partido });
+  });
+
+  $('aplicarFormato').onclick = () => accion({ type: 'config', config: leerFormato() });
+
+  let armado = null;
+  $('nuevoPartido').onclick = () => {
+    const b = $('nuevoPartido');
+    if (!armado) {
+      b.classList.add('armado'); b.textContent = 'Toca otra vez: se borra el marcador';
+      armado = setTimeout(() => { armado = null; b.classList.remove('armado'); b.textContent = 'Nuevo partido'; }, 3500);
+      return;
+    }
+    clearTimeout(armado); armado = null; b.classList.remove('armado'); b.textContent = 'Nuevo partido';
+    accion({ type: 'nuevoPartido', config: leerFormato() });
+  };
+
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input,select,textarea')) return;
+    const k = e.key.toLowerCase();
+    if (k === 'a') $('puntoA').click();
+    else if (k === 'l') $('puntoB').click();
+    else if (k === 'z') $('deshacer').click();
+  });
+
+  arrancar();
+}
+</script>
+</body>
+</html>

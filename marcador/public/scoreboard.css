@@ -1,0 +1,98 @@
+/* Marcador compacto para emisión. Diseño propio. */
+.mk {
+  --mk-fondo: rgba(14, 18, 24, 0.92);
+  --mk-fondo-2: rgba(30, 36, 46, 0.95);
+  --mk-linea: rgba(255, 255, 255, 0.08);
+  --mk-texto: #ffffff;
+  --mk-tenue: rgba(255, 255, 255, 0.48);
+  --mk-acento: #c8f135;          /* verde pelota */
+  --mk-acento-texto: #0e1218;
+  --mk-set: rgba(255, 255, 255, 0.62);
+  font-family: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  font-weight: 700;
+  color: var(--mk-texto);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: opacity .4s ease, transform .4s ease;
+  -webkit-font-smoothing: antialiased;
+}
+.mk.oculto { opacity: 0; transform: translateX(-24px); }
+
+.mk-cabecera {
+  font-size: 15px; letter-spacing: .14em; text-transform: uppercase;
+  background: var(--mk-acento); color: var(--mk-acento-texto);
+  padding: 3px 12px 2px; border-radius: 6px 6px 0 0;
+}
+.mk-cabecera:empty { display: none; }
+
+.mk-caja {
+  display: grid;
+  grid-template-columns: auto;
+  background: var(--mk-fondo);
+  border-radius: 0 8px 8px 8px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+}
+.mk-cabecera:empty + .mk-caja { border-radius: 8px; }
+
+.mk-fila { display: flex; align-items: stretch; height: 46px; }
+.mk-fila + .mk-fila { border-top: 1px solid var(--mk-linea); }
+
+.mk-saque { width: 30px; display: flex; align-items: center; justify-content: center; }
+.mk-saque i {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--mk-acento);
+  box-shadow: 0 0 0 3px var(--mk-acento-suave, rgba(200, 241, 53, .18));
+  transform: scale(0); transition: transform .25s ease;
+}
+.mk-fila.saca .mk-saque i { transform: scale(1); }
+
+.mk-nombres {
+  min-width: 300px; padding-right: 22px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 27px; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap;
+}
+.mk-nombres .sep { color: var(--mk-tenue); font-weight: 500; }
+.mk-fila.saca .mk-nombres .j { color: var(--mk-tenue); transition: color .25s; }
+.mk-fila.saca .mk-nombres .j.saca { color: var(--mk-texto); }
+
+.mk-sets { display: flex; }
+.mk-set {
+  width: 34px; display: flex; align-items: center; justify-content: center;
+  font-size: 25px; color: var(--mk-set); position: relative;
+}
+.mk-set.gana { color: var(--mk-texto); }
+.mk-set sup { font-size: 13px; position: absolute; top: 5px; right: 2px; color: var(--mk-tenue); }
+
+.mk-juegos {
+  width: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; background: var(--mk-fondo-2);
+}
+.mk-puntos {
+  width: 64px; display: flex; align-items: center; justify-content: center;
+  font-size: 30px; background: var(--mk-acento); color: var(--mk-acento-texto);
+  overflow: hidden;
+}
+.mk-fila + .mk-fila .mk-puntos { box-shadow: inset 0 1px 0 rgba(14, 18, 24, .25); }
+.mk-sin-puntos .mk-puntos { width: 0; }
+
+.mk-fila.ganador .mk-nombres { color: var(--mk-acento); }
+
+.cambio { animation: mk-cambio .45s cubic-bezier(.2, .8, .2, 1); }
+@keyframes mk-cambio {
+  0% { transform: translateY(70%); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+.mk-etiquetas { display: flex; gap: 6px; margin-top: 6px; min-height: 30px; }
+.mk-etiqueta {
+  font-size: 18px; letter-spacing: .12em; padding: 4px 12px 3px;
+  background: var(--mk-texto); color: var(--mk-fondo-solido, #0e1218); border-radius: 6px;
+  border-left: 5px solid var(--mk-acento);
+  animation: mk-entra .35s cubic-bezier(.2, .8, .2, 1);
+}
+.mk-etiqueta.fuerte { background: var(--mk-acento); color: var(--mk-acento-texto); border-left-color: var(--mk-texto); }
+@keyframes mk-entra {
+  0% { transform: translateY(-10px); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}

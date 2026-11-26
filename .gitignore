@@ -1,0 +1,4 @@
+node_modules/
+estado.json
+biblioteca.json
+.env

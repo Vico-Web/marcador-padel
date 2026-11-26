@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Widgets pádel (OBS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="widgets.css">
+<style>html,body{margin:0;background:transparent;overflow:hidden}#stage{transform-origin:0 0}</style>
+</head><body>
+<!-- Fuente de navegador en OBS: 1920x1080. Fondo transparente. -->
+<div id="stage"></div>
+<script src="widgets.js"></script>
+<script>
+{
+  const st=document.getElementById('stage');
+  const w=PadelWidgets.montar(st);
+  const escala=()=>{st.style.transform=`scale(${Math.min(innerWidth/1920,innerHeight/1080)})`;};
+  addEventListener('resize',escala);escala();
+  window.aplicarEstado=e=>w.aplicar(e);
+  PadelWidgets.escuchar(e=>w.aplicar(e));
+}
+</script>
+</body></html>

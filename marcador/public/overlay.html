@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Marcador · Overlay</title>
+<meta name="viewport" content="width=1920">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scoreboard.css">
+<style>
+  /* Fondo transparente para OBS. Posición y escala: ?x=48&y=40&escala=1 */
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  #zona { position: absolute; transform-origin: top left; }
+  body.prueba { background: #2a6fd6 linear-gradient(160deg, #1f4fa8, #2f7be0); }
+</style>
+</head>
+<body>
+<div id="zona"></div>
+<script src="engine.js"></script>
+<script src="scoreboard.js"></script>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var zona = document.getElementById('zona');
+  zona.style.left = (q.get('x') || 48) + 'px';
+  zona.style.top = (q.get('y') || 40) + 'px';
+  zona.style.transform = 'scale(' + (q.get('escala') || 1) + ')';
+  if (q.has('fondo')) document.body.classList.add('prueba');
+
+  var ui = Scoreboard.crear(zona);
+  function aplicar(doc) { try { Scoreboard.pintar(ui, doc); } catch (e) { console.error(e); } }
+  window.aplicarEstado = aplicar;
+
+  // 1) Servidor local (lo normal en OBS)
+  if (location.protocol.indexOf('http') === 0) {
+    var es = new EventSource('/events');
+    es.onmessage = function (e) { aplicar(JSON.parse(e.data)); };
+  }
+  // 2) Modo demo: mismo navegador, sin servidor
+  if ('BroadcastChannel' in window) {
+    new BroadcastChannel('marcador-padel').onmessage = function (e) { if (e.data && e.data.marcador) aplicar(e.data); };
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "marcador-padel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Marcador de pádel en directo para OBS con panel de control",
+  "scripts": { "start": "node marcador/server.js" },
+  "engines": { "node": ">=18" }
+}
