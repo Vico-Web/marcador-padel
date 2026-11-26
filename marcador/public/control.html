@@ -237,10 +237,19 @@ input:focus,select:focus,.btn:focus-visible,.punto:focus-visible{outline:2px sol
       if (!d || !d.marcador) throw 0;
       modo = 'servidor'; doc = d;
       fetch('/api/login', { method: 'POST', headers: cabeceras(), body: '{}' }).then(r => { if (r.status === 401) pedirClave(); }).catch(() => {});
-      const es = new EventSource('/events');
-      es.onopen = () => conexion('ok', 'En directo');
-      es.onerror = () => conexion('ko', 'Reconectando…');
-      es.onmessage = e => { doc = JSON.parse(e.data); pintar(); };
+      // Si el servidor se reinicia, el navegador puede dar la conexión por perdida: la reabrimos a mano
+      let es = null, reintento = null;
+      const abrir = () => {
+        clearTimeout(reintento);
+        if (es) es.close();
+        es = new EventSource('/events');
+        es.onopen = () => conexion('ok', 'En directo');
+        es.onmessage = e => { conexion('ok', 'En directo'); doc = JSON.parse(e.data); pintar(); };
+        es.onerror = () => { conexion('ko', 'Reconectando…'); es.close(); reintento = setTimeout(abrir, 2000); };
+      };
+      abrir();
+      document.addEventListener('visibilitychange', () => { if (!document.hidden && (!es || es.readyState !== 1)) abrir(); });
+      window.addEventListener('online', abrir);
       const local = /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname);
       const base = local ? location.origin.replace('://' + location.hostname, '://localhost') : location.origin;
       $('notaObs').innerHTML = 'En OBS añade una fuente <b>Navegador</b> de 1920×1080 con <code>' + base + '/overlay</code> y otra con <code>' + base + '/widgets/widgets.html</code> para fichas y VS. Posición y tamaño del marcador: <code>/overlay?x=48&amp;y=40&amp;escala=1</code>.';

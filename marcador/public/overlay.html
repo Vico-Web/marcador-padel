@@ -33,8 +33,15 @@
 
   // 1) Servidor local (lo normal en OBS)
   if (location.protocol.indexOf('http') === 0) {
-    var es = new EventSource('/events');
-    es.onmessage = function (e) { aplicar(JSON.parse(e.data)); };
+    var es = null;
+    var abrir = function () {
+      if (es) es.close();
+      es = new EventSource('/events');
+      es.onmessage = function (e) { aplicar(JSON.parse(e.data)); };
+      // tras un reinicio del servidor, reabrir la conexión cada 2 s hasta que vuelva
+      es.onerror = function () { es.close(); setTimeout(abrir, 2000); };
+    };
+    abrir();
   }
   // 2) Modo demo: mismo navegador, sin servidor
   if ('BroadcastChannel' in window) {
