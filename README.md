@@ -22,6 +22,25 @@ Direcciones finales (sustituye por tu dominio):
 
 Cada vez que se sube un cambio a GitHub, Railway lo vuelve a publicar solo.
 
+## Control desde el Apple Watch (app Atajos)
+
+El servidor tiene direcciones sencillas pensadas para atajos del iPhone y el Apple Watch. Responden con un texto corto con el marcador, por ejemplo `40-15 · Juegos 3-2 · Sets 1-0`, y el cambio aparece al momento en OBS y en el panel.
+
+| Acción | Método | Dirección |
+| --- | --- | --- |
+| Punto pareja A | POST | `/reloj/punto/a` |
+| Punto pareja B | POST | `/reloj/punto/b` |
+| Quitar el último punto de A | POST | `/reloj/restar/a` |
+| Quitar el último punto de B | POST | `/reloj/restar/b` |
+| Deshacer lo último | POST | `/reloj/deshacer` |
+| Ver el marcador | GET | `/reloj/estado` |
+
+La clave va en la cabecera `X-Clave` o al final de la dirección: `?clave=TU-CLAVE`. Por defecto es la misma que `CLAVE_PANEL`; si quieres una distinta para el reloj, define la variable `CLAVE_RELOJ` en Railway.
+
+"Restar" solo quita el último punto y solo si lo ganó esa pareja (el pádel no permite restar un punto suelto sin saber cómo se llegó al marcador). Para cualquier otra corrección, usa deshacer o el panel.
+
+En la app Atajos: nuevo atajo → acción **Obtener contenido de URL** con la dirección completa (por ejemplo `https://TU-DOMINIO/reloj/punto/a?clave=TU-CLAVE`), método **POST** → acción **Mostrar resultado**. En los detalles del atajo, activa **Mostrar en el Apple Watch**.
+
 ## Probar en local
 
 ```
