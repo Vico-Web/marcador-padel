@@ -22,6 +22,7 @@ El estado se guarda en `estado.json`, así que si se cierra el servidor el parti
 - `CLAVE_PANEL`: contraseña del panel. Si está definida, el panel la pide una vez y la recuerda en ese móvil. Los overlays de OBS no la necesitan (solo leen).
 - `PORT`: puerto (por defecto 3000; los servicios de hosting lo ponen solos).
 - `DATA_DIR`: carpeta donde guardar `estado.json` y `biblioteca.json` (en hosting, la del disco persistente).
+- `CLAVE_RELOJ`: clave de los atajos del reloj (`/reloj/...`). Si no se define, se usa `CLAVE_PANEL`.
 
 ## Colores
 

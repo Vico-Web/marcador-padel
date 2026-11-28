@@ -17,15 +17,67 @@ try { fs.mkdirSync(DATOS, { recursive: true }); } catch (_) {}
 let ultimoGuardado = null, errorGuardado = null;
 const ARCHIVO_ESTADO = path.join(DATOS, 'estado.json');
 const CLAVE = process.env.CLAVE_PANEL || '';            // si está definida, el panel pide contraseña
+// Clave para los atajos del reloj (/reloj/...). Si no se define, se usa la del panel.
+const CLAVE_RELOJ = process.env.CLAVE_RELOJ || CLAVE;
 const crypto = require('crypto');
 let bib = async () => false;
 try { bib = require(path.join(WIDGETS, 'biblioteca-server.js'))(DATOS); } catch (_) { /* sin carpeta widgets */ }
 
+function iguales(dada, clave) {
+  const a = Buffer.from(String(dada || ''));
+  const b = Buffer.from(clave);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 function claveOk(req) {
   if (!CLAVE) return true;
-  const a = Buffer.from(String(req.headers['x-clave'] || ''));
-  const b = Buffer.from(CLAVE);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return iguales(req.headers['x-clave'], CLAVE);
+}
+function claveRelojOk(req, url) {
+  if (!CLAVE_RELOJ) return true;
+  return iguales(req.headers['x-clave'] || url.searchParams.get('clave'), CLAVE_RELOJ);
+}
+
+/* Resumen corto del marcador para mostrar en el reloj, p. ej. "40-15 · Juegos 3-2 · Sets 1-0" */
+function resumen() {
+  const m = doc.marcador;
+  const v = E.vista(m);
+  if (v.ganador !== null) return 'Partido terminado. Gana la pareja ' + (v.ganador === 0 ? 'A' : 'B') +
+    ' · Sets ' + v.setsGanados.join('-');
+  const puntos = v.puntos.join('-');
+  const partes = [(v.tiebreak ? 'TB ' : '') + puntos, 'Juegos ' + v.juegos.join('-'), 'Sets ' + v.setsGanados.join('-')];
+  if (v.etiquetas.length) partes.push(v.etiquetas.join(', '));
+  return partes.join(' · ');
+}
+function texto(res, code, t) {
+  res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(t);
+}
+
+/* Atajos del reloj: POST /reloj/punto/a|b, /reloj/restar/a|b, /reloj/deshacer; GET o POST /reloj/estado.
+   Clave en la cabecera X-Clave o en ?clave=. Responden con texto corto. */
+function atajoReloj(req, res, url) {
+  if (!claveRelojOk(req, url)) return texto(res, 401, 'Clave incorrecta');
+  const partes = url.pathname.split('/').filter(Boolean).slice(1); // ['punto','a']
+  const orden = partes[0], equipo = { a: 0, b: 1 }[(partes[1] || '').toLowerCase()];
+  if (orden === 'estado') return texto(res, 200, resumen());
+  if (req.method !== 'POST') return texto(res, 405, 'Usa el método POST');
+  if (orden === 'punto' && equipo !== undefined) {
+    if (doc.marcador.ganador !== null) return texto(res, 409, 'El partido ya ha terminado. ' + resumen());
+    historial.push(doc.marcador);
+    if (historial.length > MAX_HISTORIAL) historial.shift();
+    doc = E.aplicarAccion(doc, { type: 'punto', equipo });
+  } else if (orden === 'restar' && equipo !== undefined) {
+    // Solo se puede quitar el último punto, y solo si lo ganó esa pareja.
+    const previo = historial[historial.length - 1];
+    if (!previo || JSON.stringify(E.punto(previo, equipo)) !== JSON.stringify(doc.marcador))
+      return texto(res, 409, 'El último punto no fue de la pareja ' + partes[1].toUpperCase() + '. ' + resumen());
+    doc.marcador = historial.pop();
+  } else if (orden === 'deshacer') {
+    if (!historial.length) return texto(res, 409, 'Nada que deshacer. ' + resumen());
+    doc.marcador = historial.pop();
+  } else return texto(res, 404, 'Orden desconocida');
+  emitir();
+  return texto(res, 200, resumen());
 }
 const MAX_HISTORIAL = 300;
 
@@ -106,6 +158,8 @@ const server = http.createServer(async (req, res) => {
 
   if (p === '/api/state' && req.method === 'GET') return json(res, 200, doc);
   if (p === '/api/info' && req.method === 'GET') return json(res, 200, { clave: !!CLAVE, datos: DATOS, volumen: process.env.RAILWAY_VOLUME_MOUNT_PATH || null, dataDir: process.env.DATA_DIR || null, ultimoGuardado, errorGuardado });
+
+  if (p.startsWith('/reloj/')) return atajoReloj(req, res, url);
 
   if (req.method === 'POST' && p.startsWith('/api/') && !claveOk(req)) return json(res, 401, { error: 'clave' });
   if (p === '/api/login') return json(res, 200, { ok: true });
